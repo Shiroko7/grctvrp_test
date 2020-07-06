@@ -3,3 +3,8 @@
 *.png
 *.pdf
 *.out
+IOProcedures.cpp
+IOProcedures.h
+.vscode
+*.tex
+*.xlsx
