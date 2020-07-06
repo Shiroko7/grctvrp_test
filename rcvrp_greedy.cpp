@@ -7,6 +7,14 @@
 using namespace std;
 
 
+void print_solution(vector<int> sol)
+{
+    for(size_t i = 0; i < sol.size();i++)
+    {
+        cout << sol[i] <<" ";
+    }
+    cout << "\n";
+}
 
 struct coordinates
 {
@@ -22,7 +30,7 @@ float distance(coordinates v, coordinates u)
 float short_FO(int i, int j, float** d_matrix, float current_risk,float R)
 {
     float alpha = current_risk/R;
-    return ((1-alpha)*d_matrix[i][j] + alpha*d_matrix[0][j]);
+    return ((1-alpha)*d_matrix[i][j] + alpha*d_matrix[j][0]);
 }
 
 float single_FO(vector<int> solution, float** d_matrix, coordinates* &map)
@@ -67,7 +75,7 @@ float route_demand(int* demands_array, vector<int> sol, size_t n)
     size_t i;
     if (!sol.empty())
     {
-        for(i = 1; i < n; i++) 
+        for(i = 0; i < n; i++) 
         {
             r_demand += demands_array[sol[i]];
         }
@@ -78,16 +86,24 @@ float route_demand(int* demands_array, vector<int> sol, size_t n)
 float route_risk(int* demands_array, float** d_matrix,vector<int> sol)
 {
     float r_risk = 0.0;
-    size_t i;
+
     if (!sol.empty())
     {
-        r_risk +=  demands_array[sol[0]]*d_matrix[0][sol[0]];
-        for(i = 1; i < sol.size(); ++i) 
+        //cout << "0 - " << sol[0] << " - ";
+
+        if (sol.size() > 1)
         {
-            r_risk += d_matrix[sol[i-1]][sol[i]]*route_demand(demands_array, sol,i);
+            for(size_t j = 0; j < sol.size()-1; j++) 
+            {
+            //    cout  << sol[j+1] << " - ";
+                r_risk += d_matrix[sol[j]][sol[j+1]]*route_demand(demands_array, sol,j+1);
+            }     
         }
         
+        //cout << "la wea p " << sol.size()  << " sjaja ";
+        r_risk += d_matrix[sol[sol.size() -1]][0]*route_demand(demands_array, sol, sol.size());
     }
+    //cout << "Risk: " << r_risk <<"\n---------------- \n";
     /*
     if (sol.size() > 1)
     {
@@ -118,17 +134,17 @@ int choose_node(vector<int> sol, int* demands_array,float** d_matrix,coordinates
 {
     float min_dist = numeric_limits<float>::infinity(), candidate_fo;
     int min_pos;
-    bool flag = false;    
+    bool flag = false;
     float current_risk;
     int last;
     for(int i = 0; i < N; i++)
     {
-        current_risk = route_risk(demands_array,d_matrix,sol); 
+        current_risk = route_risk(demands_array,d_matrix,sol);
         if (!sol.empty())
             last = sol.back();
         else
             last = 0;
-        candidate_fo = short_FO(last, i, d_matrix, current_risk,R); //single_FO(sol, d_matrix, map); //change this
+        candidate_fo = short_FO(last, i, d_matrix, current_risk, R); //single_FO(sol, d_matrix, map); //change this
         sol.push_back(i);
         if(valid_choice(sol,map[i].taken, candidate_fo, min_dist, demands_array,R,d_matrix))
         {
@@ -146,15 +162,6 @@ int choose_node(vector<int> sol, int* demands_array,float** d_matrix,coordinates
     }
     else
         return -1;
-}
-
-void print_solution(vector<int> sol)
-{
-    for(size_t i = 0; i < sol.size();i++)
-    {
-        cout << sol[i] <<" ";
-    }
-    cout << "\n";
 }
 
 vector<vector<int>> greedy_solver(int* demands_array, coordinates* &map,float** d_matrix, int N, float R)
@@ -199,22 +206,25 @@ int main()
     // nodes coordinates;
     coordinates* map;
 
-    //read inputs
+    // read inputs
     cin >> N;
     cin >> R;
 
+    // fill demand array
     demands_array = new int[N];
     for(int i = 0; i < N; i++)
     {
         cin >> demands_array[i];
     }
 
+    // make distance map
     map = new coordinates[N];
     for(int i = 0; i < N; i++)
     {
         cin >> map[i].x;
         cin >> map[i].y;
     }
+
     map[0].taken = true;
     // distance matrix 
     float **d_matrix = new float*[N];
@@ -228,8 +238,10 @@ int main()
     vector<vector<int>> sol;
     
     sol = greedy_solver(demands_array,map,d_matrix,N,R);
+
+
     
-    /*
+    /* print solution 
     for(size_t i = 0; i < sol.size() ; i++)
     {
         cout << "vehicle " << i <<": ";
@@ -240,14 +252,15 @@ int main()
         cout << "risk: " << route_risk(demands_array,d_matrix,sol[i]) << "\n";
     }
     cout << "FO: ";
+
     */
-    cout << FO(sol,d_matrix, map) <<"\n";
-
-    
-    //for(int i=0; i<N;i++)
-    //    cout << i << " " << map[i].taken <<"\n"; 
-
+    // check that all nodes were visited
+    //for (int i = 0; i < N; i++)
+    //    cout << map[i].taken << "\n";
     // liberar memoria
+
+    cout << FO(sol,d_matrix, map) <<"\n";
+    
     delete[] demands_array;
     delete[] map;
 
